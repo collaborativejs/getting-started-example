@@ -1,5 +1,5 @@
 {
-  "name": "getting-started-with-collaborative",
+  "name": "collaborative-getting-started-example",
   "version": "1.0.0",
   "description": "This repo is an example of an application which provides collaborative access to a text document using Collaborative.js. This example related to Collaborative.js Getting Started tutorial.",
   "main": "index.js",
