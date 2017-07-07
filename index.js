@@ -59,7 +59,7 @@ function createDocument() {
  * Note: In the Collaborative.js terminology, each client accessing the document is called site and must have an ID.
  * See http://collaborativejs.org/api/clv#clvsiteid to learn more about site IDs.
  */
-app.get('/document/:id?', function(req, res) {
+app.get('/:id?', function(req, res) {
   var documentId = req.params.id;
   var document = null;
 
@@ -93,7 +93,7 @@ app.get('/document/:id?', function(req, res) {
 /**
  * Defines an endpoint to update the document on the server and other sites connected to the document.
  */
-app.post('/document/:id/update', function(req, res) {
+app.post('/:id/update', function(req, res) {
   var documentId = req.params.id;
   var execOrder = req.body.execOrder;
   var updates = req.body.updates;

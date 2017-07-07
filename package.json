@@ -4,7 +4,8 @@
   "description": "This repo is an example of an application which provides collaborative access to a text document using Collaborative.js. This example is related to Collaborative.js Getting Started tutorial.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
