@@ -6,13 +6,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Getting Started with Collaborative.js</title>
+    <style>
+        textarea {
+            width: 600px;
+            height: 200px;
+        }
+    </style>
 </head>
 <body>
-<h1>Hello, world!</h1>
-<script src="node_modules/collaborative/dist/collaborative.min.js"></script>
+<div>
+    Use this link to open the document in a separate window or share with a friend:
+    <br>
+    <a id="share-link" href="#" target="_blank"></a>
+</div>
+<textarea id="text-area"></textarea>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="/collaborative.min.js"></script>
 <script>
-    var stringDocument = new clv.string.Document();
+  // Line {{site}} is replaced to the site data during the page rendering.
+  // For details, see '/document/:id?' endpoint at index.js file.
+  var site = '{{site}}';
+  var updateDocumentUrl = '/document/' + site.document.id + '/update';
 
+  // These are utility calls and doesn't relate to the Collaborative.js functionality.
+  updatePageUrl();
+  renderSharingLink();
+
+
+  // Creates Collaborative.js string document using initial data had came from the server.
+  var stringDocument = new clv.string.Document(
+      site.id,
+      site.document.execOrder,
+      site.document.context
+  );
+
+  // Creates Collaborative.js net object with sending interval set to one second.
+  var net = new clv.net.Http();
+  net.setSendingFn(sendingFunc);
+  net.start(1000);
+
+  // Sets initial document value to the textarea control and bind changes handling function.
+  var $textArea = $('#text-area');
+  $textArea.val(site.document.data);
+  $textArea.bind('input propertychange', textAreaValueChangeHandler);
+
+  /**
+   * On each change event, generates Collaborative.js operations using a difference between
+   * text in textarea control and text in the site data object. Generated operations are used to
+   * update site data on the page and send to the server.
+   */
+  function textAreaValueChangeHandler() {
+    var ops = clv.ops.string.genOps(site.document.data, $textArea.val());
+    var tuple = stringDocument.commit(ops);
+    var value = clv.ops.string.exec(site.document.data, tuple.toExec);
+
+    site.document.data = value;
+    $textArea.val(value);
+    net.send(stringDocument.getExecOrder(), tuple.toSend);
+  }
+
+  /**
+   * Renders a sharing link, so you may play with a demo in two separate windows or
+   * share it with a friend.
+   */
+  function renderSharingLink() {
+    var $shareLink = $('#share-link');
+    $shareLink.attr('href', document.location.href);
+    $shareLink.html(document.location.href);
+  }
+
+  /**
+   * Updates page URL with document id, so you may copy page URL from the browser bar 
+   * to open it in a separate window or share with a friend.
+   */
+  function updatePageUrl() {
+    var path = '/document/' + site.document.id;
+    if (window.location.pathname !== path) {
+      if (history) history.replaceState(null, null, path);
+      else window.location.replace(path);
+    }
+  }
+
+  /**
+   * Это ревьюить не нужно, в тот момент когда мы доделаем net,
+   * эта фукнция удалится совсем вместе с вызовом net.setSendingFn(sendingFunc);
+   */
+  function sendingFunc(execOrder, updates, callback) {
+    var data = {execOrder: execOrder, updates: updates};
+
+    $.ajax({
+      url: updateDocumentUrl,
+      type: 'POST',
+      data: JSON.stringify(data),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function(data) {
+        var otherSitesUpdates = data.updates;
+        if (otherSitesUpdates) {
+          var tuple = stringDocument.update(otherSitesUpdates);
+          site.document.data = clv.ops.string.exec(site.document.data, tuple.toExec);
+          $textArea.val(site.document.data);
+        }
+        callback(true, stringDocument.getExecOrder(), otherSitesUpdates);
+      },
+      error: function(data) {
+        callback(false);
+        console.log('Fail to update document\n' + data.status + ', ' + data.responseText);
+      }
+    });
+  }
 </script>
 </body>
 </html>
