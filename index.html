@@ -16,45 +16,44 @@
 </head>
 <body>
 <div>
-    Use this link to open the document in a separate window or share with a friend:
-    <br>
+    Use this link to open the document in a separate window or share it with friend:
+    <br />
     <a id="share-link" href="#" target="_blank"></a>
 </div>
 <textarea id="text-area"></textarea>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <script src="/collaborative.min.js"></script>
 <script>
-  // Line {{site}} is replaced to the site data during the page rendering.
-  // For details, see '/document/:id?' endpoint at index.js file.
+  // {{site}} token is replaced by the server with the site data during the page rendering
+  // For details, see '/document/:id?' endpoint at index.js file
   var site = '{{site}}';
   var updateDocumentUrl = '/' + site.document.id + '/update';
 
-  // These are utility calls and doesn't relate to the Collaborative.js functionality.
+  // These calls are utility ones and are not related to the Collaborative.js functionality
   updatePageUrl();
   renderSharingLink();
 
-
-  // Creates Collaborative.js string document using initial data had came from the server.
+  // Creates Collaborative.js string document using initial data from the server
   var stringDocument = new clv.string.Document(
       site.id,
       site.document.execOrder,
       site.document.context
   );
 
-  // Creates Collaborative.js net object with sending interval set to one second.
+  // Creates Collaborative.js net object with sending interval set to one second
   var net = new clv.net.Http();
   net.setSendingFn(sendingFunc);
   net.start(1000);
 
-  // Sets initial document value to the textarea control and bind changes handling function.
+  // Sets initial document value to the textarea control and binds changes handling function
   var $textArea = $('#text-area');
   $textArea.val(site.document.data);
   $textArea.bind('input propertychange', textAreaValueChangeHandler);
 
   /**
-   * On each change event, generates Collaborative.js operations using a difference between
-   * text in textarea control and text in the site data object. Generated operations are used to
-   * update site data on the page and send to the server.
+   * On each change event, generates Collaborative.js operations using the difference between
+   * the textarea control value and the text stored in the site data object.
+   * Generated operations are used to update local site data and are sent to the server.
    */
   function textAreaValueChangeHandler() {
     var ops = clv.ops.string.genOps(site.document.data, $textArea.val());
@@ -67,7 +66,7 @@
   }
 
   /**
-   * Renders a sharing link, so you may play with a demo in two separate windows or
+   * Renders a sharing link, so you can play around with the demo in two separate windows or
    * share it with a friend.
    */
   function renderSharingLink() {
@@ -77,8 +76,8 @@
   }
 
   /**
-   * Updates page URL with document id, so you may copy page URL from the browser bar 
-   * to open it in a separate window or share with a friend.
+   * Updates page URL with document id, so you may copy page URL from the browser address bar
+   * to open it in a separate window or share it with a friend.
    */
   function updatePageUrl() {
     var path = '/document/' + site.document.id;
