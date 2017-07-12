@@ -81,7 +81,7 @@
    * to open it in a separate window or share with a friend.
    */
   function updatePageUrl() {
-    var path = '/document/' + site.document.id;
+    var path = '/' + site.document.id;
     if (window.location.pathname !== path) {
       if (history) history.replaceState(null, null, path);
       else window.location.replace(path);
