@@ -6,33 +6,34 @@ var path = require('path');
 var fs = require('fs');
 
 
-// Creates server instance with JSON requests and static files support.
+// Creates server instance with JSON requests and static files support
 var app = express();
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 app.use(express.static('node_modules/collaborative/dist'));
 
 
-// Crates in-memory storage.
+// Crates in-memory storage
 // Note: As far as Node.js is single-threaded by its nature, for the example application
 // we can use regular JavaScript object. In the real life application, you will need to replace
-// it with disk database (like MongoDB, MySQL, PostgreSQL, etc) or with in-memory database (like Redis, Tarantool, etc)
-// with replication to disk database.
+// it with the disk database (like MongoDB, MySQL, PostgreSQL, etc.) or with the in-memory database
+// (like Redis, Tarantool, etc.) with replication to disk database.
 var storage = {};
 
 /**
- * Creates new data for a new Collaborative.js document in the storage.
- * Data fields:
- *   id - Unique string to identify the document, see docs at http://collaborativejs.org/api/clv#clvdocid
- *   data - Data related to the document, depend on the type of the document can be one of the supported data types,
- *   see docs at http://collaborativejs.org/docs/supported-data-types
- *   ops - List of all operations that had ever made on the document.
- *   These operations will be used in the transformation process due to undo, redo and other historical operations.
- *   See operation definition at http://collaborativejs.org/api/clv#clvlocaloperation
- *   execOrder - Index of last valid operation that had executed on the document, see docs at http://collaborativejs.org/api/clv#clvexecorder
- *   context - Context object describes current state of the document on the certain site,
- *   see docs at http://collaborativejs.org/api/clv#clvcontext
- * @returns {Object}
+ * Creates new Collaborative.js document representation for the storage.
+ * Object fields:
+ *   id - Unique string to identify the document. See docs at http://collaborativejs.org/api/clv#clvdocid
+ *   data - Data stored in the document. Depends on the type of the document,
+ *        can be one of the supported data types. See docs at http://collaborativejs.org/docs/supported-data-types
+ *   ops - List of all operations that had ever been executed on the document.
+ *        These operations can be used in the transformation process in cases of undo, redo and some other.
+ *        See operation definition at http://collaborativejs.org/api/clv#clvlocaloperation
+ *   execOrder - Index of the last valid operation executed on the document.
+ *        See docs at http://collaborativejs.org/api/clv#clvexecorder
+ *   context - Context object describes current state of the document on the certain site.
+ *        See docs at http://collaborativejs.org/api/clv#clvcontext
+ * @return {Object}
  */
 function createDocument() {
   // Generates RFC4122 v4 UUID (random based) for the document.
@@ -47,7 +48,7 @@ function createDocument() {
     context: null
   };
 
-  // Saves to the storage.
+  // Saves it to the storage.
   storage[id] = document;
 
   return document;
@@ -55,15 +56,15 @@ function createDocument() {
 
 
 /**
- * Defines an endpoint to access the document.
- * Note: In the Collaborative.js terminology, each client accessing the document is called site and must have an ID.
+ * Defines the endpoint to access the document.
+ * Note: In the Collaborative.js terminology, each client accessing the document is called a site and must have an ID.
  * See http://collaborativejs.org/api/clv#clvsiteid to learn more about site IDs.
  */
 app.get('/:id?', function(req, res) {
   var documentId = req.params.id;
   var document = null;
 
-  // If document id is passed, looks for the document data else creates new one.
+  // If document id is passed, looks for the document data. Otherwise creates the new one.
   if (documentId) {
     document = storage[documentId];
   } else {
@@ -74,10 +75,10 @@ app.get('/:id?', function(req, res) {
     // Generates RFC4122 v1 UUID (timestamp based) for the site.
     var id = uuid.v1();
 
-    // Generate site data.
+    // Generates site data.
     var site = {id: id, document: document};
 
-    // For example application we are using a fs.readFileSync and string replace methods to render a page,
+    // For example application we are using a fs.readFileSync and string replace methods to render the page,
     // in real world application you might use one of the dozens Node.js templating engines.
     var template = fs.readFileSync(__dirname + '/index.html').toString();
     var page = template.replace("'{{site}}'", JSON.stringify(site));
@@ -91,7 +92,7 @@ app.get('/:id?', function(req, res) {
 
 
 /**
- * Defines an endpoint to update the document on the server and other sites connected to the document.
+ * Defines the endpoint to update a document.
  */
 app.post('/:id/update', function(req, res) {
   var documentId = req.params.id;
@@ -102,10 +103,10 @@ app.post('/:id/update', function(req, res) {
   var documentData = storage[documentId];
 
   if (documentData) {
-    // apply updates to the document
+    // Applies updates to the document on the server
     applyUpdates(documentData, updates);
 
-    // Looks for the updates for the site
+    // Looks for the updates to return to the site
     var response = {
       updates: searchForUpdates(documentData, execOrder)
     };
@@ -120,46 +121,50 @@ app.post('/:id/update', function(req, res) {
 
 
 /**
- * Updates document data, the results of the update process are
+ * Updates document data on the server. The results of the update process are:
  * 1. New document data value.
  * 2. Updated list of document operations.
  * 3. New document context value.
  * 4. New document execOrder value.
  */
 function applyUpdates(documentData, updates) {
+  // Creates new string document instance with the latest state known to the server
+  // and passes all known operations to it.
   var document = new clv.string.Document(null, documentData.execOrder, documentData.context);
   document.update(documentData.ops);
 
   for (var i = 0, count = updates.length; i < count; i++) {
     var op = updates[i];
-    // Checks whenever operation is valid and will not corrupt the document
-    if (clv.ops.canApply(op, documentData.context)) {
-      // Checks whenever operation have been already applied
-      if (!clv.ops.seen(op, documentData.context)) {
+    // Checks whether the operation was not seen by the server yet.
+    if (!clv.ops.seen(op, documentData.context)) {
+      // Checks whether the operation is valid and can be applied to the document.
+      if (clv.ops.canApply(op, documentData.context)) {
+        // Sets the operation exec order to be the next exec order after all seen operations.
         op.execOrder = documentData.ops.length + 1;
+        // Updates the document and stored document data.
         var tuple = document.update(op);
         documentData.data = clv.ops.string.exec(documentData.data, tuple.toExec);
         documentData.context = document.getContext();
         documentData.ops.push(op);
         documentData.execOrder = document.getExecOrder();
       } else {
+        throw Error("One of the received operations is corrupted, can't apply this and all following operations.");
         // Note:
-        // As far as we see there are three possible cases of receiving duplicate operations:
+        // As far as we see there can only be two possible reasons for this error:
         //    1. Incorrect front-end implementation.
-        //    2. Incorrect network implementation (In case of custom implementation instead of clv.net objects).
-        //    3. Unexpected network errors caused by network providers environment.
-        // There are no additional actions required in case of receiving duplicate operations, just don't execute them.
+        //    2. Unexpected network errors caused by network providers environment.
+        // To avoid corruption of the whole document, it is required to resend all corrupted operations.
+        // In case you're using clv.net objects, you don't need to do anything, all operations will be resent
+        // automatically. Otherwise, you have to resend them by yourself.
         // In real world app, you also might want to have some error reporting here.
       }
     } else {
-      throw Error("One of the received operations is corrupted, can't apply this and all following operations.");
       // Note:
-      // As far as we see there are only two possible cases of this error:
+      // As far as we see there can be three possible reasons for receiving duplicate operations:
       //    1. Incorrect front-end implementation.
-      //    2. Unexpected network errors caused by network providers environment.
-      // To avoid corruption of the whole document, it is required to resend all corrupted operations.
-      // In case you're using clv.net objects, you don't need to do anything, all operations will be re-sent
-      // automatically, otherwise, you have to resend them yourself.
+      //    2. Incorrect network implementation (in case of custom implementation instead of clv.net objects).
+      //    3. Unexpected network errors caused by network providers environment.
+      // There are no additional actions required in case of receiving duplicate operations - just don't execute them.
       // In real world app, you also might want to have some error reporting here.
     }
   }
@@ -168,8 +173,8 @@ function applyUpdates(documentData, updates) {
 
 /**
  * Looks for the updates to send.
- * All operations with exec order greater than passed should be sent to the requester site.
- * @returns {Array}
+ * All operations with the exec order greater than passed should be sent to the client site.
+ * @return {Array}
  */
 function searchForUpdates(documentData, execOrder) {
   return documentData.ops.filter(function(op) {
