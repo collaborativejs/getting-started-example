@@ -88,8 +88,7 @@
   }
 
   /**
-   * Это ревьюить не нужно, в тот момент когда мы доделаем net,
-   * эта фукнция удалится совсем вместе с вызовом net.setSendingFn(sendingFunc);
+   * This is a temporary function, it will be replaced with XhrIO implementation ASAP.
    */
   function sendingFunc(execOrder, updates, callback) {
     var data = {execOrder: execOrder, updates: updates};
