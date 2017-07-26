@@ -136,14 +136,14 @@ function applyUpdates(documentData, updates) {
   for (var i = 0, count = updates.length; i < count; i++) {
     var op = updates[i];
     // Checks whether the operation was not seen by the server yet.
-    if (!clv.ops.seen(op, documentData.context)) {
+    if (!clv.seen(op, documentData.context)) {
       // Checks whether the operation is valid and can be applied to the document.
-      if (clv.ops.canApply(op, documentData.context)) {
+      if (clv.canApply(op, documentData.context)) {
         // Sets the operation exec order to be the next exec order after all seen operations.
         op.execOrder = documentData.ops.length + 1;
         // Updates the document and stored document data.
         var tuple = document.update(op);
-        documentData.data = clv.ops.string.exec(documentData.data, tuple.toExec);
+        documentData.data = clv.string.exec(documentData.data, tuple.toExec);
         documentData.context = document.getContext();
         documentData.ops.push(op);
         documentData.execOrder = document.getExecOrder();
