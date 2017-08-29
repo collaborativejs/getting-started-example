@@ -1,5 +1,5 @@
 
-[<img src="http://collaborativejs.org/img/logo-transparent-color.png" align="left" width="100px" alt="Collaborative.js - Collaborative software for any project">](http://collaborativejs.org)
+[<img src="http://collaborativejs.org/img/logo-transparent-color.png" align="right" width="100px" alt="Collaborative.js - Collaborative software for any project">](http://collaborativejs.org)
 
 # Getting Started with Collaborative.js
 This repo is an example of an application which provides collaborative access to a text document using Collaborative.js.
